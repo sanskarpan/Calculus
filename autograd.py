@@ -673,3 +673,24 @@ def sgd_step(parameters: List[Variable], learning_rate: float = 0.01):
     for param in parameters:
         param.value -= learning_rate * param.grad
         param.grad = 0.0  # Reset gradient
+
+
+def zero_grad(params: List[Variable]):
+    """
+    Reset gradients of all parameters to zero.
+
+    Essential for training loops to avoid gradient accumulation.
+
+    Args:
+        params: List of parameter Variables
+
+    Example:
+        >>> x = Variable(2.0)
+        >>> y = x ** 2
+        >>> backward(y)
+        >>> print(x.grad)  # 4.0
+        >>> zero_grad([x])
+        >>> print(x.grad)  # 0.0
+    """
+    for param in params:
+        param.grad = 0.0
