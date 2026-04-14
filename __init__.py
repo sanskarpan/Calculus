@@ -36,7 +36,7 @@ from .integration import (
     double_integral,
 )
 
-from .autograd import Variable, ComputationGraph, backward
+from .autograd import Variable, ComputationGraph, backward, zero_grad
 
 from .taylor_series import (
     taylor_series,
@@ -65,6 +65,7 @@ __all__ = [
     "Variable",
     "ComputationGraph",
     "backward",
+    "zero_grad",
     "taylor_series",
     "taylor_series_numerical",
     "exp_taylor",
