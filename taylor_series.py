@@ -17,9 +17,10 @@ import math
 
 def factorial(n: int) -> int:
     """Compute factorial n!"""
-    if n <= 1:
-        return 1
-    return n * factorial(n - 1)
+    if n < 0:
+        raise ValueError("factorial is undefined for negative integers")
+    # Use the stdlib implementation (fast + no recursion depth issues).
+    return math.factorial(n)
 
 
 def taylor_series(
