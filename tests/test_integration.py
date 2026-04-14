@@ -4,13 +4,18 @@ Unit tests for integration module
 
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import unittest
 import math
 from Calculus.integration import (
-    riemann_sum, trapezoidal_rule, simpsons_rule,
-    monte_carlo_integration, double_integral, expectation
+    riemann_sum,
+    trapezoidal_rule,
+    simpsons_rule,
+    monte_carlo_integration,
+    double_integral,
+    expectation,
 )
 
 
@@ -33,14 +38,14 @@ class TestBasicIntegration(unittest.TestCase):
 
     def test_trapezoidal_quadratic(self):
         """Test trapezoidal rule for quadratic."""
-        f = lambda x: x ** 2
+        f = lambda x: x**2
         # ∫₀¹ x² dx = x³/3 |₀¹ = 1/3
         result = trapezoidal_rule(f, 0, 1, n=1000)
-        self.assertAlmostEqual(result, 1/3, places=3)
+        self.assertAlmostEqual(result, 1 / 3, places=3)
 
     def test_simpsons_rule(self):
         """Test Simpson's rule (most accurate)."""
-        f = lambda x: x ** 3
+        f = lambda x: x**3
         # ∫₀² x³ dx = x⁴/4 |₀² = 4
         result = simpsons_rule(f, 0, 2, n=1000)
         self.assertAlmostEqual(result, 4.0, places=3)
@@ -60,15 +65,15 @@ class TestMonteCarloIntegration(unittest.TestCase):
         """Test Monte Carlo on simple function."""
         f = lambda x: x
         # ∫₀¹ x dx = 0.5
-        result = monte_carlo_integration(f, 0, 1, n_samples=100000)
+        result, _ = monte_carlo_integration(f, 0, 1, n_samples=100000)
         self.assertAlmostEqual(result, 0.5, places=1)
 
     def test_monte_carlo_quadratic(self):
         """Test Monte Carlo on quadratic."""
-        f = lambda x: x ** 2
+        f = lambda x: x**2
         # ∫₀¹ x² dx = 1/3
-        result = monte_carlo_integration(f, 0, 1, n_samples=100000)
-        self.assertAlmostEqual(result, 1/3, places=1)
+        result, _ = monte_carlo_integration(f, 0, 1, n_samples=100000)
+        self.assertAlmostEqual(result, 1 / 3, places=1)
 
 
 class TestMultipleIntegrals(unittest.TestCase):
@@ -102,12 +107,12 @@ class TestProbabilityIntegration(unittest.TestCase):
 
     def test_expectation_quadratic(self):
         """Test E[X²] for uniform distribution."""
-        f = lambda x: x ** 2
+        f = lambda x: x**2
         pdf = lambda x: 1.0
         # E[X²] = 1/3 for Uniform(0,1)
         result = expectation(f, pdf, 0, 1, n=1000)
-        self.assertAlmostEqual(result, 1/3, places=2)
+        self.assertAlmostEqual(result, 1 / 3, places=2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
