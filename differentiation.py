@@ -75,7 +75,12 @@ def derivative(
         raise ValueError(f"Unknown method: {method}")
 
 
-def second_derivative(f: Callable[[float], float], x: float, h: float = 1e-5) -> float:
+def second_derivative(
+    f: Callable[[float], float],
+    x: float,
+    h: Optional[float] = None,
+    adaptive: bool = False,
+) -> float:
     """
     Compute the second derivative using central differences.
 
@@ -87,13 +92,17 @@ def second_derivative(f: Callable[[float], float], x: float, h: float = 1e-5) ->
     Args:
         f: Function to differentiate
         x: Point at which to compute second derivative
-        h: Step size
+        h: Step size. If None and adaptive=True, uses scale-aware default.
+           If None and adaptive=False, defaults to 1e-5.
+        adaptive: If True, automatically adjusts step size based on |x|
 
     Returns:
         Approximate second derivative f''(x)
 
     Formula: f''(x) ≈ (f(x+h) - 2f(x) + f(x-h)) / h²
     """
+    if h is None:
+        h = _default_step_size(x) if adaptive else 1e-5
     return (f(x + h) - 2 * f(x) + f(x - h)) / (h**2)
 
 
@@ -101,7 +110,8 @@ def partial_derivative(
     f: Callable[[List[float]], float],
     x: List[float],
     variable_index: int,
-    h: float = 1e-5,
+    h: Optional[float] = None,
+    adaptive: bool = False,
 ) -> float:
     """
     Compute partial derivative with respect to one variable.
@@ -115,11 +125,16 @@ def partial_derivative(
         f: Multivariate function
         x: Point at which to compute partial derivative
         variable_index: Index of variable to differentiate with respect to
-        h: Step size
+        h: Step size. If None and adaptive=True, uses scale-aware default
+           based on the selected coordinate. If None and adaptive=False,
+           defaults to 1e-5.
+        adaptive: If True, automatically adjusts step size per-coordinate.
 
     Returns:
         Partial derivative ∂f/∂x_i
     """
+    if h is None:
+        h = _default_step_size(x[variable_index]) if adaptive else 1e-5
     x_plus = x.copy()
     x_minus = x.copy()
 
@@ -130,7 +145,10 @@ def partial_derivative(
 
 
 def gradient(
-    f: Callable[[List[float]], float], x: List[float], h: float = 1e-5
+    f: Callable[[List[float]], float],
+    x: List[float],
+    h: Optional[float] = None,
+    adaptive: bool = False,
 ) -> List[float]:
     """
     Compute the gradient (vector of partial derivatives).
@@ -145,7 +163,9 @@ def gradient(
     Args:
         f: Multivariate function R^n → R
         x: Point at which to compute gradient
-        h: Step size
+        h: Step size. If None and adaptive=True, uses scale-aware default
+           per-coordinate. If None and adaptive=False, defaults to 1e-5.
+        adaptive: If True, automatically adjusts step size per-coordinate.
 
     Returns:
         Gradient vector ∇f = [∂f/∂x₁, ∂f/∂x₂, ..., ∂f/∂xₙ]
@@ -159,13 +179,16 @@ def gradient(
     grad = []
 
     for i in range(n):
-        grad.append(partial_derivative(f, x, i, h))
+        grad.append(partial_derivative(f, x, i, h=h, adaptive=adaptive))
 
     return grad
 
 
 def jacobian(
-    f: Callable[[List[float]], List[float]], x: List[float], h: float = 1e-5
+    f: Callable[[List[float]], List[float]],
+    x: List[float],
+    h: Optional[float] = None,
+    adaptive: bool = False,
 ) -> List[List[float]]:
     """
     Compute the Jacobian matrix of a vector-valued function.
@@ -178,7 +201,9 @@ def jacobian(
     Args:
         f: Vector function R^n → R^m
         x: Point at which to compute Jacobian
-        h: Step size
+        h: Step size. If None and adaptive=True, uses scale-aware default
+           per-coordinate. If None and adaptive=False, defaults to 1e-5.
+        adaptive: If True, automatically adjusts step size per-coordinate.
 
     Returns:
         Jacobian matrix J where J[i][j] = ∂f_i/∂x_j
@@ -202,13 +227,16 @@ def jacobian(
             return f(x_val)[i]
 
         for j in range(n):
-            J[i][j] = partial_derivative(f_i, x, j, h)
+            J[i][j] = partial_derivative(f_i, x, j, h=h, adaptive=adaptive)
 
     return J
 
 
 def hessian(
-    f: Callable[[List[float]], float], x: List[float], h: float = 1e-5
+    f: Callable[[List[float]], float],
+    x: List[float],
+    h: Optional[float] = None,
+    adaptive: bool = False,
 ) -> List[List[float]]:
     """
     Compute the Hessian matrix (matrix of second partial derivatives).
@@ -221,7 +249,10 @@ def hessian(
     Args:
         f: Multivariate function R^n → R
         x: Point at which to compute Hessian
-        h: Step size
+        h: Step size. If None and adaptive=True, uses scale-aware default
+           per-coordinate (based on max(|x_i|, |x_j|)). If None and adaptive=False,
+           defaults to 1e-5.
+        adaptive: If True, automatically adjusts step size based on coordinates.
 
     Returns:
         Hessian matrix H where H[i][j] = ∂²f/(∂x_i ∂x_j)
@@ -236,14 +267,18 @@ def hessian(
 
     for i in range(n):
         for j in range(i, n):  # Exploit symmetry
+            hij = h
+            if hij is None:
+                scale = max(abs(x[i]), abs(x[j]), 1.0)
+                hij = (1e-5 * scale) if adaptive else 1e-5
             if i == j:
                 # Diagonal: pure second partial derivative
                 x_plus = x.copy()
                 x_minus = x.copy()
-                x_plus[i] += h
-                x_minus[i] -= h
+                x_plus[i] += hij
+                x_minus[i] -= hij
 
-                H[i][i] = (f(x_plus) - 2 * f(x) + f(x_minus)) / (h**2)
+                H[i][i] = (f(x_plus) - 2 * f(x) + f(x_minus)) / (hij**2)
             else:
                 # Off-diagonal: mixed partial derivative
                 # ∂²f/(∂x_i ∂x_j) ≈ (f(x+h_i+h_j) - f(x+h_i) - f(x+h_j) + f(x)) / h²
@@ -252,19 +287,19 @@ def hessian(
                 x_mp = x.copy()  # -h_i, +h_j
                 x_mm = x.copy()  # -h_i, -h_j
 
-                x_pp[i] += h
-                x_pp[j] += h
+                x_pp[i] += hij
+                x_pp[j] += hij
 
-                x_pm[i] += h
-                x_pm[j] -= h
+                x_pm[i] += hij
+                x_pm[j] -= hij
 
-                x_mp[i] -= h
-                x_mp[j] += h
+                x_mp[i] -= hij
+                x_mp[j] += hij
 
-                x_mm[i] -= h
-                x_mm[j] -= h
+                x_mm[i] -= hij
+                x_mm[j] -= hij
 
-                H[i][j] = (f(x_pp) - f(x_pm) - f(x_mp) + f(x_mm)) / (4 * h**2)
+                H[i][j] = (f(x_pp) - f(x_pm) - f(x_mp) + f(x_mm)) / (4 * hij**2)
                 H[j][i] = H[i][j]  # Symmetry
 
     return H
