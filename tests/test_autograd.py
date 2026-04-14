@@ -104,6 +104,20 @@ class TestActivationFunctions(unittest.TestCase):
         # At x=0: σ'(0) = σ(0)(1-σ(0)) = 0.5 * 0.5 = 0.25
         self.assertAlmostEqual(x.grad, 0.25, places=5)
 
+    def test_softplus_stability_large_values(self):
+        """Softplus should not overflow for large magnitude inputs."""
+        x_pos = Variable(1000.0)
+        y_pos = x_pos.softplus()
+        self.assertTrue(math.isfinite(y_pos.value))
+        # For large x, softplus(x) ≈ x
+        self.assertAlmostEqual(y_pos.value, 1000.0, places=6)
+
+        x_neg = Variable(-1000.0)
+        y_neg = x_neg.softplus()
+        self.assertTrue(math.isfinite(y_neg.value))
+        # For large negative x, softplus(x) ≈ 0
+        self.assertAlmostEqual(y_neg.value, 0.0, places=12)
+
     def test_tanh(self):
         """Test tanh activation."""
         x = Variable(0.0)
