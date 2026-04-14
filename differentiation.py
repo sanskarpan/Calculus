@@ -21,8 +21,23 @@ from typing import Callable, List, Optional, Union
 import math
 
 
-def derivative(f: Callable[[float], float], x: float, h: float = 1e-5,
-               method: str = 'central') -> float:
+def _default_step_size(x: float, base_h: float = 1e-5) -> float:
+    """
+    Compute adaptive step size based on x value.
+
+    Uses heuristic: h = base_h * max(1, |x|) to avoid issues with small x
+    while not being too large for moderate x.
+    """
+    return base_h * max(1.0, abs(x))
+
+
+def derivative(
+    f: Callable[[float], float],
+    x: float,
+    h: Optional[float] = None,
+    method: str = "central",
+    adaptive: bool = False,
+) -> float:
     """
     Compute the derivative of a function at a point using finite differences.
 
@@ -34,8 +49,10 @@ def derivative(f: Callable[[float], float], x: float, h: float = 1e-5,
     Args:
         f: Function to differentiate
         x: Point at which to compute derivative
-        h: Step size (smaller = more accurate, but numerical errors)
+        h: Step size. If None and adaptive=True, uses scale-aware default.
+           If None and adaptive=False, defaults to 1e-5.
         method: 'forward', 'backward', or 'central'
+        adaptive: If True, automatically adjusts step size based on |x|
 
     Returns:
         Approximate derivative f'(x)
@@ -45,11 +62,14 @@ def derivative(f: Callable[[float], float], x: float, h: float = 1e-5,
         - Backward: f'(x) ≈ (f(x) - f(x-h)) / h
         - Central: f'(x) ≈ (f(x+h) - f(x-h)) / (2h) [most accurate]
     """
-    if method == 'forward':
+    if h is None:
+        h = _default_step_size(x) if adaptive else 1e-5
+
+    if method == "forward":
         return (f(x + h) - f(x)) / h
-    elif method == 'backward':
+    elif method == "backward":
         return (f(x) - f(x - h)) / h
-    elif method == 'central':
+    elif method == "central":
         return (f(x + h) - f(x - h)) / (2 * h)
     else:
         raise ValueError(f"Unknown method: {method}")
@@ -74,11 +94,15 @@ def second_derivative(f: Callable[[float], float], x: float, h: float = 1e-5) ->
 
     Formula: f''(x) ≈ (f(x+h) - 2f(x) + f(x-h)) / h²
     """
-    return (f(x + h) - 2 * f(x) + f(x - h)) / (h ** 2)
+    return (f(x + h) - 2 * f(x) + f(x - h)) / (h**2)
 
 
-def partial_derivative(f: Callable[[List[float]], float], x: List[float],
-                       variable_index: int, h: float = 1e-5) -> float:
+def partial_derivative(
+    f: Callable[[List[float]], float],
+    x: List[float],
+    variable_index: int,
+    h: float = 1e-5,
+) -> float:
     """
     Compute partial derivative with respect to one variable.
 
@@ -105,8 +129,9 @@ def partial_derivative(f: Callable[[List[float]], float], x: List[float],
     return (f(x_plus) - f(x_minus)) / (2 * h)
 
 
-def gradient(f: Callable[[List[float]], float], x: List[float],
-             h: float = 1e-5) -> List[float]:
+def gradient(
+    f: Callable[[List[float]], float], x: List[float], h: float = 1e-5
+) -> List[float]:
     """
     Compute the gradient (vector of partial derivatives).
 
@@ -139,8 +164,9 @@ def gradient(f: Callable[[List[float]], float], x: List[float],
     return grad
 
 
-def jacobian(f: Callable[[List[float]], List[float]], x: List[float],
-             h: float = 1e-5) -> List[List[float]]:
+def jacobian(
+    f: Callable[[List[float]], List[float]], x: List[float], h: float = 1e-5
+) -> List[List[float]]:
     """
     Compute the Jacobian matrix of a vector-valued function.
 
@@ -181,8 +207,9 @@ def jacobian(f: Callable[[List[float]], List[float]], x: List[float],
     return J
 
 
-def hessian(f: Callable[[List[float]], float], x: List[float],
-            h: float = 1e-5) -> List[List[float]]:
+def hessian(
+    f: Callable[[List[float]], float], x: List[float], h: float = 1e-5
+) -> List[List[float]]:
     """
     Compute the Hessian matrix (matrix of second partial derivatives).
 
@@ -216,7 +243,7 @@ def hessian(f: Callable[[List[float]], float], x: List[float],
                 x_plus[i] += h
                 x_minus[i] -= h
 
-                H[i][i] = (f(x_plus) - 2 * f(x) + f(x_minus)) / (h ** 2)
+                H[i][i] = (f(x_plus) - 2 * f(x) + f(x_minus)) / (h**2)
             else:
                 # Off-diagonal: mixed partial derivative
                 # ∂²f/(∂x_i ∂x_j) ≈ (f(x+h_i+h_j) - f(x+h_i) - f(x+h_j) + f(x)) / h²
@@ -237,14 +264,18 @@ def hessian(f: Callable[[List[float]], float], x: List[float],
                 x_mm[i] -= h
                 x_mm[j] -= h
 
-                H[i][j] = (f(x_pp) - f(x_pm) - f(x_mp) + f(x_mm)) / (4 * h ** 2)
+                H[i][j] = (f(x_pp) - f(x_pm) - f(x_mp) + f(x_mm)) / (4 * h**2)
                 H[j][i] = H[i][j]  # Symmetry
 
     return H
 
 
-def directional_derivative(f: Callable[[List[float]], float], x: List[float],
-                          direction: List[float], h: float = 1e-5) -> float:
+def directional_derivative(
+    f: Callable[[List[float]], float],
+    x: List[float],
+    direction: List[float],
+    h: float = 1e-5,
+) -> float:
     """
     Compute directional derivative in a given direction.
 
@@ -263,7 +294,7 @@ def directional_derivative(f: Callable[[List[float]], float], x: List[float],
         Directional derivative D_v f(x) = ∇f(x) · v
     """
     # Normalize direction
-    norm = math.sqrt(sum(d ** 2 for d in direction))
+    norm = math.sqrt(sum(d**2 for d in direction))
     if norm == 0:
         raise ValueError("Direction vector cannot be zero")
 
@@ -276,8 +307,12 @@ def directional_derivative(f: Callable[[List[float]], float], x: List[float],
     return (f(x_plus) - f(x_minus)) / (2 * h)
 
 
-def gradient_descent_step(f: Callable[[List[float]], float], x: List[float],
-                          learning_rate: float = 0.01, h: float = 1e-5) -> List[float]:
+def gradient_descent_step(
+    f: Callable[[List[float]], float],
+    x: List[float],
+    learning_rate: float = 0.01,
+    h: float = 1e-5,
+) -> List[float]:
     """
     Perform one step of gradient descent.
 
@@ -304,9 +339,13 @@ def gradient_descent_step(f: Callable[[List[float]], float], x: List[float],
     return x_new
 
 
-def check_gradient(f: Callable[[List[float]], float],
-                   analytical_grad: Callable[[List[float]], List[float]],
-                   x: List[float], h: float = 1e-5, tolerance: float = 1e-5) -> bool:
+def check_gradient(
+    f: Callable[[List[float]], float],
+    analytical_grad: Callable[[List[float]], List[float]],
+    x: List[float],
+    h: float = 1e-5,
+    tolerance: float = 1e-5,
+) -> bool:
     """
     Verify analytical gradient implementation against numerical gradient.
 
@@ -336,9 +375,11 @@ def check_gradient(f: Callable[[List[float]], float],
 
     for i in range(len(numerical_grad)):
         if abs(numerical_grad[i] - analytical[i]) > tolerance:
-            print(f"Gradient mismatch at index {i}: "
-                  f"numerical={numerical_grad[i]:.6f}, "
-                  f"analytical={analytical[i]:.6f}")
+            print(
+                f"Gradient mismatch at index {i}: "
+                f"numerical={numerical_grad[i]:.6f}, "
+                f"analytical={analytical[i]:.6f}"
+            )
             return False
 
     return True
@@ -366,8 +407,9 @@ def chain_rule(outer_derivative: float, inner_derivatives: List[float]) -> List[
     return [outer_derivative * inner_deriv for inner_deriv in inner_derivatives]
 
 
-def laplacian(f: Callable[[List[float]], float], x: List[float],
-              h: float = 1e-5) -> float:
+def laplacian(
+    f: Callable[[List[float]], float], x: List[float], h: float = 1e-5
+) -> float:
     """
     Compute the Laplacian (sum of second partial derivatives).
 
@@ -393,14 +435,15 @@ def laplacian(f: Callable[[List[float]], float], x: List[float],
         x_plus[i] += h
         x_minus[i] -= h
 
-        second_partial = (f(x_plus) - 2 * f(x) + f(x_minus)) / (h ** 2)
+        second_partial = (f(x_plus) - 2 * f(x) + f(x_minus)) / (h**2)
         laplacian_value += second_partial
 
     return laplacian_value
 
 
-def divergence(F: Callable[[List[float]], List[float]], x: List[float],
-               h: float = 1e-5) -> float:
+def divergence(
+    F: Callable[[List[float]], List[float]], x: List[float], h: float = 1e-5
+) -> float:
     """
     Compute divergence of a vector field.
 
@@ -421,6 +464,7 @@ def divergence(F: Callable[[List[float]], List[float]], x: List[float],
     div = 0.0
 
     for i in range(n):
+
         def F_i(x_val):
             return F(x_val)[i]
 
@@ -429,8 +473,9 @@ def divergence(F: Callable[[List[float]], List[float]], x: List[float],
     return div
 
 
-def curl(F: Callable[[List[float]], List[float]], x: List[float],
-         h: float = 1e-5) -> List[float]:
+def curl(
+    F: Callable[[List[float]], List[float]], x: List[float], h: float = 1e-5
+) -> List[float]:
     """
     Compute curl of a 3D vector field.
 
@@ -466,8 +511,13 @@ def curl(F: Callable[[List[float]], List[float]], x: List[float],
     return [curl_x, curl_y, curl_z]
 
 
-def critical_points_1d(f: Callable[[float], float], a: float, b: float,
-                       num_samples: int = 1000, tolerance: float = 1e-5) -> List[float]:
+def critical_points_1d(
+    f: Callable[[float], float],
+    a: float,
+    b: float,
+    num_samples: int = 1000,
+    tolerance: float = 1e-5,
+) -> List[float]:
     """
     Find critical points (where f'(x) = 0) in an interval.
 
@@ -500,8 +550,9 @@ def critical_points_1d(f: Callable[[float], float], a: float, b: float,
     return critical
 
 
-def is_convex(f: Callable[[float], float], a: float, b: float,
-              num_samples: int = 100) -> bool:
+def is_convex(
+    f: Callable[[float], float], a: float, b: float, num_samples: int = 100
+) -> bool:
     """
     Check if a function is convex on an interval.
 
@@ -530,3 +581,34 @@ def is_convex(f: Callable[[float], float], a: float, b: float,
             return False
 
     return True
+
+
+def complex_step_derivative(
+    f: Callable[[complex], complex], x: float, h: float = 1e-5
+) -> float:
+    """
+    Compute derivative using complex-step method.
+
+    Very accurate for analytic functions - avoids subtractive cancellation!
+
+    Formula: f'(x) ≈ Im(f(x + ih)) / h
+
+    Advantages over finite differences:
+    - No subtractive cancellation error
+    - Much more accurate for analytic functions
+    - Works with any step size (even very small)
+
+    Args:
+        f: Function that accepts complex input (must be analytic)
+        x: Point at which to compute derivative
+        h: Step size (smaller = more accurate, typically 1e-5 works well)
+
+    Returns:
+        Approximate derivative f'(x)
+
+    Example:
+        >>> f = lambda z: complex(math.exp(z.real) * math.cos(z.imag), math.exp(z.real) * math.sin(z.imag))
+        >>> complex_step_derivative(f, 1.0)  # d/dx exp(x) at x=1
+        2.718...
+    """
+    return f(complex(x, h)).imag / h
