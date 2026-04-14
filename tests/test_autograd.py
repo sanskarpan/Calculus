@@ -100,6 +100,24 @@ class TestActivationFunctions(unittest.TestCase):
         # At x=0: σ'(0) = σ(0)(1-σ(0)) = 0.5 * 0.5 = 0.25
         self.assertAlmostEqual(x.grad, 0.25, places=5)
 
+    def test_sigmoid_extremes_value_and_grad(self):
+        """Sigmoid should be stable and have near-zero gradient at extremes."""
+        x_pos = Variable(1000.0)
+        y_pos = x_pos.sigmoid()
+        self.assertTrue(math.isfinite(y_pos.value))
+        backward(y_pos)
+        self.assertTrue(math.isfinite(x_pos.grad))
+        self.assertAlmostEqual(y_pos.value, 1.0, places=12)
+        self.assertAlmostEqual(x_pos.grad, 0.0, places=12)
+
+        x_neg = Variable(-1000.0)
+        y_neg = x_neg.sigmoid()
+        self.assertTrue(math.isfinite(y_neg.value))
+        backward(y_neg)
+        self.assertTrue(math.isfinite(x_neg.grad))
+        self.assertAlmostEqual(y_neg.value, 0.0, places=12)
+        self.assertAlmostEqual(x_neg.grad, 0.0, places=12)
+
     def test_softplus_stability_large_values(self):
         """Softplus should not overflow for large magnitude inputs."""
         x_pos = Variable(1000.0)
@@ -113,6 +131,25 @@ class TestActivationFunctions(unittest.TestCase):
         self.assertTrue(math.isfinite(y_neg.value))
         # For large negative x, softplus(x) ≈ 0
         self.assertAlmostEqual(y_neg.value, 0.0, places=12)
+
+    def test_softplus_gradient_extremes(self):
+        """softplus'(x) = sigmoid(x) should behave at extremes."""
+        x_pos = Variable(1000.0)
+        y_pos = x_pos.softplus()
+        backward(y_pos)
+        self.assertAlmostEqual(x_pos.grad, 1.0, places=12)
+
+        x_neg = Variable(-1000.0)
+        y_neg = x_neg.softplus()
+        backward(y_neg)
+        self.assertAlmostEqual(x_neg.grad, 0.0, places=12)
+
+    def test_log_domain_error(self):
+        """log should raise for non-positive inputs."""
+        with self.assertRaises(ValueError):
+            Variable(0.0).log()
+        with self.assertRaises(ValueError):
+            Variable(-1.0).log()
 
     def test_tanh(self):
         """Test tanh activation."""
