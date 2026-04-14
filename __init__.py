@@ -1,19 +1,22 @@
 """
-Calculus & Multivariable Calculus Library for AI/ML/DL
-=======================================================
+Calculus Library for AI/ML/DL
+==============================
 
 A comprehensive calculus library built from scratch in Python,
 designed specifically for understanding the mathematical foundations
 of optimization, backpropagation, and deep learning.
 
-Modules:
---------
-- differentiation: Numerical and automatic differentiation
-- integration: Numerical integration methods
-- vector_calculus: Gradient, divergence, curl operations
-- taylor_series: Taylor expansion and function approximation
-- autograd: Automatic differentiation and computational graphs
-- optimization_utils: Critical points, convexity checking
+Stable Modules:
+---------------
+- differentiation: Numerical differentiation (derivatives, gradients, Jacobians, Hessians)
+- integration: Numerical integration (Riemann, trapezoidal, Simpson's, Monte Carlo)
+- autograd: Reverse-mode automatic differentiation with computational graphs
+
+Available via direct import:
+- taylor_series: Taylor expansions and function approximation
+
+This is an educational package for learning scalar calculus and toy autograd.
+Not intended for production use.
 """
 
 from .differentiation import (
@@ -22,7 +25,7 @@ from .differentiation import (
     gradient,
     jacobian,
     hessian,
-    gradient_descent_step
+    gradient_descent_step,
 )
 
 from .integration import (
@@ -30,13 +33,20 @@ from .integration import (
     trapezoidal_rule,
     simpsons_rule,
     monte_carlo_integration,
-    double_integral
+    double_integral,
 )
 
-from .autograd import (
-    Variable,
-    ComputationGraph,
-    backward
+from .autograd import Variable, ComputationGraph, backward
+
+from .taylor_series import (
+    taylor_series,
+    taylor_series_numerical,
+    exp_taylor,
+    sin_taylor,
+    cos_taylor,
+    log_taylor,
+    linear_approximation,
+    quadratic_approximation,
 )
 
 __version__ = "1.0.0"
@@ -54,5 +64,13 @@ __all__ = [
     "double_integral",
     "Variable",
     "ComputationGraph",
-    "backward"
+    "backward",
+    "taylor_series",
+    "taylor_series_numerical",
+    "exp_taylor",
+    "sin_taylor",
+    "cos_taylor",
+    "log_taylor",
+    "linear_approximation",
+    "quadratic_approximation",
 ]
