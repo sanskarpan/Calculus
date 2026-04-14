@@ -15,13 +15,18 @@ These are essential for:
 - Normalizing constants
 """
 
-from typing import Callable, Tuple, List
+from typing import Callable, Tuple, List, Optional
 import random
 import math
 
 
-def riemann_sum(f: Callable[[float], float], a: float, b: float,
-                n: int = 1000, method: str = 'midpoint') -> float:
+def riemann_sum(
+    f: Callable[[float], float],
+    a: float,
+    b: float,
+    n: int = 1000,
+    method: str = "midpoint",
+) -> float:
     """
     Compute definite integral using Riemann sums.
 
@@ -48,11 +53,11 @@ def riemann_sum(f: Callable[[float], float], a: float, b: float,
     total = 0.0
 
     for i in range(n):
-        if method == 'left':
+        if method == "left":
             x = a + i * dx
-        elif method == 'right':
+        elif method == "right":
             x = a + (i + 1) * dx
-        elif method == 'midpoint':
+        elif method == "midpoint":
             x = a + (i + 0.5) * dx
         else:
             raise ValueError(f"Unknown method: {method}")
@@ -62,8 +67,9 @@ def riemann_sum(f: Callable[[float], float], a: float, b: float,
     return total
 
 
-def trapezoidal_rule(f: Callable[[float], float], a: float, b: float,
-                     n: int = 1000) -> float:
+def trapezoidal_rule(
+    f: Callable[[float], float], a: float, b: float, n: int = 1000
+) -> float:
     """
     Compute definite integral using trapezoidal rule.
 
@@ -98,8 +104,9 @@ def trapezoidal_rule(f: Callable[[float], float], a: float, b: float,
     return total * dx
 
 
-def simpsons_rule(f: Callable[[float], float], a: float, b: float,
-                  n: int = 1000) -> float:
+def simpsons_rule(
+    f: Callable[[float], float], a: float, b: float, n: int = 1000
+) -> float:
     """
     Compute definite integral using Simpson's rule.
 
@@ -140,8 +147,13 @@ def simpsons_rule(f: Callable[[float], float], a: float, b: float,
     return total * dx / 3
 
 
-def monte_carlo_integration(f: Callable[[float], float], a: float, b: float,
-                            n_samples: int = 10000) -> float:
+def monte_carlo_integration(
+    f: Callable[[float], float],
+    a: float,
+    b: float,
+    n_samples: int = 10000,
+    seed: Optional[int] = None,
+) -> Tuple[float, float]:
     """
     Compute integral using Monte Carlo sampling.
 
@@ -157,26 +169,36 @@ def monte_carlo_integration(f: Callable[[float], float], a: float, b: float,
         a: Lower limit
         b: Upper limit
         n_samples: Number of random samples
+        seed: Optional seed for reproducibility
 
     Returns:
-        Approximate integral ∫[a,b] f(x) dx
+        Tuple of (approximate integral, estimated standard error)
 
     Formula:
         ∫[a,b] f(x) dx ≈ (b-a) * (1/n) * Σ f(xᵢ) where xᵢ ~ Uniform(a,b)
 
     Error: O(n⁻⁰·⁵) but dimension-independent!
     """
-    total = 0.0
+    if seed is not None:
+        random.seed(seed)
 
-    for _ in range(n_samples):
-        x = random.uniform(a, b)
-        total += f(x)
+    samples = [random.uniform(a, b) for _ in range(n_samples)]
+    values = [f(x) for x in samples]
 
-    return (b - a) * total / n_samples
+    mean = sum(values) / n_samples
+    variance = sum((v - mean) ** 2 for v in values) / (n_samples - 1)
+    std_error = (b - a) * math.sqrt(variance / n_samples)
+
+    return (b - a) * mean, std_error
 
 
-def adaptive_integration(f: Callable[[float], float], a: float, b: float,
-                         tolerance: float = 1e-6, max_depth: int = 10) -> float:
+def adaptive_integration(
+    f: Callable[[float], float],
+    a: float,
+    b: float,
+    tolerance: float = 1e-6,
+    max_depth: int = 10,
+) -> float:
     """
     Adaptive integration with automatic refinement.
 
@@ -192,6 +214,7 @@ def adaptive_integration(f: Callable[[float], float], a: float, b: float,
     Returns:
         Approximate integral
     """
+
     def integrate_segment(left, right, depth):
         mid = (left + right) / 2
 
@@ -209,16 +232,20 @@ def adaptive_integration(f: Callable[[float], float], a: float, b: float,
             return left_half + right_half
         else:
             # Subdivide further
-            return (integrate_segment(left, mid, depth + 1) +
-                    integrate_segment(mid, right, depth + 1))
+            return integrate_segment(left, mid, depth + 1) + integrate_segment(
+                mid, right, depth + 1
+            )
 
     return integrate_segment(a, b, 0)
 
 
-def double_integral(f: Callable[[float, float], float],
-                    x_range: Tuple[float, float],
-                    y_range: Tuple[float, float],
-                    nx: int = 100, ny: int = 100) -> float:
+def double_integral(
+    f: Callable[[float, float], float],
+    x_range: Tuple[float, float],
+    y_range: Tuple[float, float],
+    nx: int = 100,
+    ny: int = 100,
+) -> float:
     """
     Compute double integral using 2D trapezoidal rule.
 
@@ -254,11 +281,13 @@ def double_integral(f: Callable[[float, float], float],
     return total
 
 
-def triple_integral(f: Callable[[float, float, float], float],
-                    x_range: Tuple[float, float],
-                    y_range: Tuple[float, float],
-                    z_range: Tuple[float, float],
-                    n: int = 50) -> float:
+def triple_integral(
+    f: Callable[[float, float, float], float],
+    x_range: Tuple[float, float],
+    y_range: Tuple[float, float],
+    z_range: Tuple[float, float],
+    n: int = 50,
+) -> float:
     """
     Compute triple integral.
 
@@ -293,9 +322,12 @@ def triple_integral(f: Callable[[float, float, float], float],
     return total
 
 
-def monte_carlo_multidim(f: Callable[[List[float]], float],
-                         bounds: List[Tuple[float, float]],
-                         n_samples: int = 100000) -> float:
+def monte_carlo_multidim(
+    f: Callable[[List[float]], float],
+    bounds: List[Tuple[float, float]],
+    n_samples: int = 100000,
+    seed: Optional[int] = None,
+) -> Tuple[float, float]:
     """
     Monte Carlo integration for multidimensional functions.
 
@@ -310,33 +342,45 @@ def monte_carlo_multidim(f: Callable[[List[float]], float],
         f: Function of d variables
         bounds: List of (min, max) for each dimension
         n_samples: Number of random samples
+        seed: Optional seed for reproducibility
 
     Returns:
-        Approximate integral
+        Tuple of (approximate integral, estimated standard error)
 
     Example:
         >>> # Integrate f(x,y,z) = x²+y²+z² over [0,1]³
         >>> f = lambda x: x[0]**2 + x[1]**2 + x[2]**2
         >>> bounds = [(0,1), (0,1), (0,1)]
-        >>> monte_carlo_multidim(f, bounds)
-        1.0  # Approximate
+        >>> result, err = monte_carlo_multidim(f, bounds)
+        >>> print(f"{result:.4f} ± {err:.4f}")
     """
+    if seed is not None:
+        random.seed(seed)
+
     d = len(bounds)
     volume = 1.0
     for low, high in bounds:
-        volume *= (high - low)
+        volume *= high - low
 
-    total = 0.0
+    samples = [
+        [random.uniform(low, high) for low, high in bounds] for _ in range(n_samples)
+    ]
+    values = [f(x) for x in samples]
 
-    for _ in range(n_samples):
-        x = [random.uniform(low, high) for low, high in bounds]
-        total += f(x)
+    mean = sum(values) / n_samples
+    variance = sum((v - mean) ** 2 for v in values) / (n_samples - 1)
+    std_error = volume * math.sqrt(variance / n_samples)
 
-    return volume * total / n_samples
+    return volume * mean, std_error
 
 
-def expectation(f: Callable[[float], float], pdf: Callable[[float], float],
-                a: float, b: float, n: int = 1000) -> float:
+def expectation(
+    f: Callable[[float], float],
+    pdf: Callable[[float], float],
+    a: float,
+    b: float,
+    n: int = 1000,
+) -> float:
     """
     Compute expectation E[f(X)] where X has PDF p(x).
 
@@ -362,14 +406,20 @@ def expectation(f: Callable[[float], float], pdf: Callable[[float], float],
         >>> expectation(f, pdf, 0, 1)
         0.333...  # Approximately 1/3
     """
+
     def integrand(x):
         return f(x) * pdf(x)
 
     return simpsons_rule(integrand, a, b, n)
 
 
-def variance(f: Callable[[float], float], pdf: Callable[[float], float],
-             a: float, b: float, n: int = 1000) -> float:
+def variance(
+    f: Callable[[float], float],
+    pdf: Callable[[float], float],
+    a: float,
+    b: float,
+    n: int = 1000,
+) -> float:
     """
     Compute variance Var[f(X)] where X has PDF p(x).
 
@@ -383,6 +433,7 @@ def variance(f: Callable[[float], float], pdf: Callable[[float], float],
     Returns:
         Var[f(X)] = E[f(X)²] - E[f(X)]²
     """
+
     # E[f(X)²]
     def f_squared(x):
         return f(x) ** 2
@@ -391,15 +442,17 @@ def variance(f: Callable[[float], float], pdf: Callable[[float], float],
 
     # E[f(X)]²
     E_f = expectation(f, pdf, a, b, n)
-    E_f_squared_alt = E_f ** 2
+    E_f_squared_alt = E_f**2
 
     return E_f_squared - E_f_squared_alt
 
 
-def line_integral(F: Callable[[float, float], Tuple[float, float]],
-                  curve: Callable[[float], Tuple[float, float]],
-                  t_range: Tuple[float, float],
-                  n: int = 1000) -> float:
+def line_integral(
+    F: Callable[[float, float], Tuple[float, float]],
+    curve: Callable[[float], Tuple[float, float]],
+    t_range: Tuple[float, float],
+    n: int = 1000,
+) -> float:
     """
     Compute line integral of vector field along a curve.
 
@@ -451,8 +504,9 @@ def line_integral(F: Callable[[float, float], Tuple[float, float]],
     return total
 
 
-def cumulative_integral(f: Callable[[float], float], a: float,
-                        x_values: List[float], n: int = 1000) -> List[float]:
+def cumulative_integral(
+    f: Callable[[float], float], a: float, x_values: List[float], n: int = 1000
+) -> List[float]:
     """
     Compute cumulative integral F(x) = ∫[a,x] f(t) dt for multiple x values.
 
@@ -488,10 +542,13 @@ def cumulative_integral(f: Callable[[float], float], a: float,
     return results
 
 
-def integrate_to_find_constant(f: Callable[[float], float],
-                               a: float, b: float,
-                               target_integral: float = 1.0,
-                               n: int = 1000) -> float:
+def integrate_to_find_constant(
+    f: Callable[[float], float],
+    a: float,
+    b: float,
+    target_integral: float = 1.0,
+    n: int = 1000,
+) -> float:
     """
     Find normalization constant c such that ∫[a,b] c*f(x) dx = target.
 
