@@ -2,10 +2,6 @@
 Unit tests for automatic differentiation (autograd) module
 """
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
 import unittest
 import math
 from Calculus.autograd import (
@@ -127,6 +123,67 @@ class TestActivationFunctions(unittest.TestCase):
         backward(y)
         # At x=0: tanh'(0) = 1
         self.assertAlmostEqual(x.grad, 1.0, places=5)
+
+    def test_sin_gradient(self):
+        """Test sin forward + gradient."""
+        x = Variable(0.3)
+        y = x.sin()
+        self.assertAlmostEqual(y.value, math.sin(0.3), places=12)
+        backward(y)
+        self.assertAlmostEqual(x.grad, math.cos(0.3), places=12)
+
+    def test_cos_gradient(self):
+        """Test cos forward + gradient."""
+        x = Variable(0.3)
+        y = x.cos()
+        self.assertAlmostEqual(y.value, math.cos(0.3), places=12)
+        backward(y)
+        self.assertAlmostEqual(x.grad, -math.sin(0.3), places=12)
+
+    def test_sqrt_gradient(self):
+        """Test sqrt forward + gradient."""
+        x = Variable(4.0)
+        y = x.sqrt()
+        self.assertAlmostEqual(y.value, 2.0, places=12)
+        backward(y)
+        # d/dx sqrt(x) = 1/(2*sqrt(x)) = 1/4 at x=4
+        self.assertAlmostEqual(x.grad, 0.25, places=12)
+
+    def test_sqrt_domain_error(self):
+        """sqrt should raise for negative inputs."""
+        with self.assertRaises(ValueError):
+            Variable(-1.0).sqrt()
+
+    def test_abs_gradient(self):
+        """Test abs forward + gradient (subgradient at 0 defined as +1)."""
+        x_pos = Variable(2.0)
+        y_pos = x_pos.abs()
+        backward(y_pos)
+        self.assertEqual(y_pos.value, 2.0)
+        self.assertEqual(x_pos.grad, 1.0)
+
+        x_neg = Variable(-2.0)
+        y_neg = x_neg.abs()
+        backward(y_neg)
+        self.assertEqual(y_neg.value, 2.0)
+        self.assertEqual(x_neg.grad, -1.0)
+
+        x_zero = Variable(0.0)
+        y_zero = x_zero.abs()
+        backward(y_zero)
+        self.assertEqual(y_zero.value, 0.0)
+        self.assertEqual(x_zero.grad, 1.0)
+
+    def test_log1p_gradient_and_domain(self):
+        """Test log1p forward + gradient and domain guard."""
+        x = Variable(0.2)
+        y = x.log1p()
+        self.assertAlmostEqual(y.value, math.log1p(0.2), places=12)
+        backward(y)
+        self.assertAlmostEqual(x.grad, 1 / 1.2, places=12)
+
+        with self.assertRaises(ValueError):
+            Variable(-1.0).log1p()
 
 
 class TestNeuralNetworkComponents(unittest.TestCase):
