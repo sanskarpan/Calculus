@@ -35,8 +35,13 @@ class Variable:
     - Parents in the graph
     """
 
-    def __init__(self, value: float, name: str = "", _children: Tuple['Variable', ...] = (),
-                 _op: str = ''):
+    def __init__(
+        self,
+        value: float,
+        name: str = "",
+        _children: Tuple["Variable", ...] = (),
+        _op: str = "",
+    ):
         """
         Initialize a Variable.
 
@@ -67,7 +72,7 @@ class Variable:
     # BASIC OPERATIONS (with gradient computation)
     # ============================================================
 
-    def __add__(self, other: 'Variable') -> 'Variable':
+    def __add__(self, other: "Variable") -> "Variable":
         """
         Addition: z = x + y
 
@@ -75,7 +80,7 @@ class Variable:
         Backward: dL/dx = dL/dz * 1, dL/dy = dL/dz * 1
         """
         other = other if isinstance(other, Variable) else Variable(other)
-        out = Variable(self.value + other.value, _children=(self, other), _op='+')
+        out = Variable(self.value + other.value, _children=(self, other), _op="+")
 
         def _backward():
             # Chain rule: dL/dself = dL/dout * dout/dself
@@ -85,7 +90,7 @@ class Variable:
         out._backward = _backward
         return out
 
-    def __mul__(self, other: 'Variable') -> 'Variable':
+    def __mul__(self, other: "Variable") -> "Variable":
         """
         Multiplication: z = x * y
 
@@ -93,7 +98,7 @@ class Variable:
         Backward: dL/dx = dL/dz * y, dL/dy = dL/dz * x
         """
         other = other if isinstance(other, Variable) else Variable(other)
-        out = Variable(self.value * other.value, _children=(self, other), _op='*')
+        out = Variable(self.value * other.value, _children=(self, other), _op="*")
 
         def _backward():
             self.grad += other.value * out.grad  # dout/dself = other.value
@@ -102,7 +107,7 @@ class Variable:
         out._backward = _backward
         return out
 
-    def __pow__(self, power: float) -> 'Variable':
+    def __pow__(self, power: float) -> "Variable":
         """
         Power: z = x^n
 
@@ -110,7 +115,7 @@ class Variable:
         Backward: dL/dx = dL/dz * n * x^(n-1)
         """
         assert isinstance(power, (int, float)), "Power must be a number"
-        out = Variable(self.value ** power, _children=(self,), _op=f'**{power}')
+        out = Variable(self.value**power, _children=(self,), _op=f"**{power}")
 
         def _backward():
             self.grad += power * (self.value ** (power - 1)) * out.grad
@@ -118,31 +123,31 @@ class Variable:
         out._backward = _backward
         return out
 
-    def __neg__(self) -> 'Variable':
+    def __neg__(self) -> "Variable":
         """Negation: z = -x"""
         return self * -1
 
-    def __sub__(self, other: 'Variable') -> 'Variable':
+    def __sub__(self, other: "Variable") -> "Variable":
         """Subtraction: z = x - y"""
         return self + (-other)
 
-    def __truediv__(self, other: 'Variable') -> 'Variable':
+    def __truediv__(self, other: "Variable") -> "Variable":
         """Division: z = x / y = x * y^(-1)"""
-        return self * (other ** -1)
+        return self * (other**-1)
 
-    def __radd__(self, other: 'Variable') -> 'Variable':
+    def __radd__(self, other: "Variable") -> "Variable":
         """Right addition: other + self"""
         return self + other
 
-    def __rmul__(self, other: 'Variable') -> 'Variable':
+    def __rmul__(self, other: "Variable") -> "Variable":
         """Right multiplication: other * self"""
         return self * other
 
-    def __rsub__(self, other: 'Variable') -> 'Variable':
+    def __rsub__(self, other: "Variable") -> "Variable":
         """Right subtraction: other - self"""
         return Variable(other) - self
 
-    def __rtruediv__(self, other: 'Variable') -> 'Variable':
+    def __rtruediv__(self, other: "Variable") -> "Variable":
         """Right division: other / self"""
         return Variable(other) / self
 
@@ -150,14 +155,14 @@ class Variable:
     # ACTIVATION FUNCTIONS (with gradients)
     # ============================================================
 
-    def relu(self) -> 'Variable':
+    def relu(self) -> "Variable":
         """
         ReLU activation: z = max(0, x)
 
         Forward: z = max(0, x)
         Backward: dL/dx = dL/dz * (1 if x > 0 else 0)
         """
-        out = Variable(max(0, self.value), _children=(self,), _op='ReLU')
+        out = Variable(max(0, self.value), _children=(self,), _op="ReLU")
 
         def _backward():
             self.grad += (self.value > 0) * out.grad
@@ -165,15 +170,22 @@ class Variable:
         out._backward = _backward
         return out
 
-    def sigmoid(self) -> 'Variable':
+    def sigmoid(self) -> "Variable":
         """
         Sigmoid activation: z = 1 / (1 + exp(-x))
 
         Forward: z = σ(x)
         Backward: dL/dx = dL/dz * σ(x) * (1 - σ(x))
+
+        Numerically stable: uses max(0, x) and min(0, x) to avoid overflow.
         """
-        sig = 1 / (1 + math.exp(-self.value))
-        out = Variable(sig, _children=(self,), _op='sigmoid')
+        # Numerically stable sigmoid
+        if self.value >= 0:
+            sig = 1 / (1 + math.exp(-self.value))
+        else:
+            exp_x = math.exp(self.value)
+            sig = exp_x / (1 + exp_x)
+        out = Variable(sig, _children=(self,), _op="sigmoid")
 
         def _backward():
             self.grad += sig * (1 - sig) * out.grad
@@ -181,7 +193,7 @@ class Variable:
         out._backward = _backward
         return out
 
-    def tanh(self) -> 'Variable':
+    def tanh(self) -> "Variable":
         """
         Tanh activation: z = tanh(x)
 
@@ -189,22 +201,22 @@ class Variable:
         Backward: dL/dx = dL/dz * (1 - tanh²(x))
         """
         t = math.tanh(self.value)
-        out = Variable(t, _children=(self,), _op='tanh')
+        out = Variable(t, _children=(self,), _op="tanh")
 
         def _backward():
-            self.grad += (1 - t ** 2) * out.grad
+            self.grad += (1 - t**2) * out.grad
 
         out._backward = _backward
         return out
 
-    def exp(self) -> 'Variable':
+    def exp(self) -> "Variable":
         """
         Exponential: z = exp(x)
 
         Forward: z = e^x
         Backward: dL/dx = dL/dz * e^x
         """
-        out = Variable(math.exp(self.value), _children=(self,), _op='exp')
+        out = Variable(math.exp(self.value), _children=(self,), _op="exp")
 
         def _backward():
             self.grad += out.value * out.grad  # d/dx(e^x) = e^x
@@ -212,14 +224,19 @@ class Variable:
         out._backward = _backward
         return out
 
-    def log(self) -> 'Variable':
+    def log(self) -> "Variable":
         """
         Natural logarithm: z = log(x)
 
         Forward: z = ln(x)
         Backward: dL/dx = dL/dz * (1/x)
+
+        Raises:
+            ValueError: If x <= 0 (log is undefined for non-positive values)
         """
-        out = Variable(math.log(self.value), _children=(self,), _op='log')
+        if self.value <= 0:
+            raise ValueError(f"log undefined for non-positive value: {self.value}")
+        out = Variable(math.log(self.value), _children=(self,), _op="log")
 
         def _backward():
             self.grad += (1 / self.value) * out.grad
@@ -269,6 +286,7 @@ class Variable:
 # COMPUTATIONAL GRAPH UTILITIES
 # ============================================================
 
+
 class ComputationGraph:
     """
     Manages a computational graph for automatic differentiation.
@@ -304,7 +322,7 @@ class ComputationGraph:
         return nodes, edges
 
     @staticmethod
-    def draw_graph(root: Variable, format: str = 'text') -> str:
+    def draw_graph(root: Variable, format: str = "text") -> str:
         """
         Create a text representation of the computational graph.
 
@@ -338,6 +356,7 @@ class ComputationGraph:
 # CONVENIENCE FUNCTIONS
 # ============================================================
 
+
 def backward(output: Variable):
     """
     Compute gradients for all variables in the graph.
@@ -358,8 +377,9 @@ def backward(output: Variable):
     output.backward()
 
 
-def numerical_gradient(f: callable, variables: List[Variable],
-                      h: float = 1e-5) -> List[float]:
+def numerical_gradient(
+    f: callable, variables: List[Variable], h: float = 1e-5
+) -> List[float]:
     """
     Compute numerical gradients for gradient checking.
 
@@ -396,8 +416,9 @@ def numerical_gradient(f: callable, variables: List[Variable],
     return grads
 
 
-def gradient_check(f: callable, variables: List[Variable],
-                  tolerance: float = 1e-5) -> bool:
+def gradient_check(
+    f: callable, variables: List[Variable], tolerance: float = 1e-5
+) -> bool:
     """
     Check if automatic gradients match numerical gradients.
 
@@ -451,8 +472,13 @@ def gradient_check(f: callable, variables: List[Variable],
 # EXAMPLE: SIMPLE NEURAL NETWORK NEURON
 # ============================================================
 
-def neuron(inputs: List[Variable], weights: List[Variable],
-           bias: Variable, activation: str = 'relu') -> Variable:
+
+def neuron(
+    inputs: List[Variable],
+    weights: List[Variable],
+    bias: Variable,
+    activation: str = "relu",
+) -> Variable:
     """
     Compute output of a single neuron.
 
@@ -484,11 +510,11 @@ def neuron(inputs: List[Variable], weights: List[Variable],
         z = z + wi * xi
 
     # Activation
-    if activation == 'relu':
+    if activation == "relu":
         return z.relu()
-    elif activation == 'sigmoid':
+    elif activation == "sigmoid":
         return z.sigmoid()
-    elif activation == 'tanh':
+    elif activation == "tanh":
         return z.tanh()
     else:
         return z  # Linear
@@ -517,7 +543,7 @@ def mse_loss(predictions: List[Variable], targets: List[float]) -> Variable:
 
     for pred, target in zip(predictions, targets):
         error = pred - Variable(target)
-        total_loss = total_loss + error ** 2
+        total_loss = total_loss + error**2
 
     return total_loss / Variable(n)
 
