@@ -341,12 +341,20 @@ class Variable:
         Forward: z = softplus(x)
         Backward: dL/dx = dL/dz * sigmoid(x)
         """
-        out = Variable(
-            math.log1p(math.exp(self.value)), _children=(self,), _op="softplus"
-        )
+        # Stable softplus:
+        # softplus(x) = max(x, 0) + log1p(exp(-|x|))
+        x = self.value
+        out_value = max(x, 0.0) + math.log1p(math.exp(-abs(x)))
+        out = Variable(out_value, _children=(self,), _op="softplus")
 
         def _backward():
-            self.grad += (1 / (1 + math.exp(-self.value))) * out.grad
+            # d/dx softplus(x) = sigmoid(x), computed stably
+            if x >= 0:
+                sig = 1 / (1 + math.exp(-x))
+            else:
+                exp_x = math.exp(x)
+                sig = exp_x / (1 + exp_x)
+            self.grad += sig * out.grad
 
         out._backward = _backward
         return out
