@@ -244,6 +244,113 @@ class Variable:
         out._backward = _backward
         return out
 
+    def sin(self) -> "Variable":
+        """
+        Sine: z = sin(x)
+
+        Forward: z = sin(x)
+        Backward: dL/dx = dL/dz * cos(x)
+        """
+        out = Variable(math.sin(self.value), _children=(self,), _op="sin")
+
+        def _backward():
+            self.grad += math.cos(self.value) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def cos(self) -> "Variable":
+        """
+        Cosine: z = cos(x)
+
+        Forward: z = cos(x)
+        Backward: dL/dx = dL/dz * (-sin(x))
+        """
+        out = Variable(math.cos(self.value), _children=(self,), _op="cos")
+
+        def _backward():
+            self.grad += -math.sin(self.value) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def sqrt(self) -> "Variable":
+        """
+        Square root: z = sqrt(x)
+
+        Forward: z = x^0.5
+        Backward: dL/dx = dL/dz * (1 / (2 * sqrt(x)))
+
+        Raises:
+            ValueError: If x < 0 (sqrt undefined for negative values)
+        """
+        if self.value < 0:
+            raise ValueError(f"sqrt undefined for negative value: {self.value}")
+        out = Variable(math.sqrt(self.value), _children=(self,), _op="sqrt")
+
+        def _backward():
+            if self.value > 0:
+                self.grad += (0.5 / math.sqrt(self.value)) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def abs(self) -> "Variable":
+        """
+        Absolute value: z = |x|
+
+        Forward: z = |x|
+        Backward: dL/dx = dL/dz * sign(x) where sign(0) = 1 (subgradient)
+
+        Note: Uses subgradient at x=0.
+        """
+        out = Variable(abs(self.value), _children=(self,), _op="abs")
+
+        def _backward():
+            self.grad += (1 if self.value >= 0 else -1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def log1p(self) -> "Variable":
+        """
+        log(1 + x): z = log(1 + x)
+
+        Numerically stable log for x near 0.
+        Forward: z = ln(1 + x)
+        Backward: dL/dx = dL/dz * (1 / (1 + x))
+
+        Raises:
+            ValueError: If 1 + x <= 0
+        """
+        if self.value + 1 <= 0:
+            raise ValueError(f"log1p undefined for value: {self.value}")
+        out = Variable(math.log1p(self.value), _children=(self,), _op="log1p")
+
+        def _backward():
+            self.grad += (1 / (1 + self.value)) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def softplus(self) -> "Variable":
+        """
+        Softplus: z = log(1 + exp(x))
+
+        Numerically stable activation function.
+        Forward: z = softplus(x)
+        Backward: dL/dx = dL/dz * sigmoid(x)
+        """
+        out = Variable(
+            math.log1p(math.exp(self.value)), _children=(self,), _op="softplus"
+        )
+
+        def _backward():
+            self.grad += (1 / (1 + math.exp(-self.value))) * out.grad
+
+        out._backward = _backward
+        return out
+
     # ============================================================
     # BACKPROPAGATION
     # ============================================================
