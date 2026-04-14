@@ -214,29 +214,29 @@ def adaptive_integration(
     Returns:
         Approximate integral
     """
+    def integrate_segment(left: float, right: float, tol: float, depth: int) -> float:
+        mid = (left + right) / 2.0
 
-    def integrate_segment(left, right, depth):
-        mid = (left + right) / 2
-
-        # Simpson's rule on whole interval
+        # Simpson's rule on whole interval and both halves.
         whole = simpsons_rule(f, left, right, n=2)
-
-        # Simpson's rule on each half
         left_half = simpsons_rule(f, left, mid, n=2)
         right_half = simpsons_rule(f, mid, right, n=2)
 
-        # Error estimate
-        error = abs(whole - (left_half + right_half))
+        # Adaptive Simpson error estimate:
+        # error ≈ (S_left + S_right - S_whole) / 15
+        refined = left_half + right_half
+        err_est = (refined - whole) / 15.0
 
-        if error < tolerance or depth >= max_depth:
-            return left_half + right_half
-        else:
-            # Subdivide further
-            return integrate_segment(left, mid, depth + 1) + integrate_segment(
-                mid, right, depth + 1
-            )
+        if depth >= max_depth or abs(err_est) < tol:
+            # Richardson-extrapolated estimate is refined + error
+            return refined + err_est
 
-    return integrate_segment(a, b, 0)
+        # Recurse, splitting tolerance across subintervals.
+        return integrate_segment(left, mid, tol / 2.0, depth + 1) + integrate_segment(
+            mid, right, tol / 2.0, depth + 1
+        )
+
+    return integrate_segment(a, b, tolerance, 0)
 
 
 def double_integral(
@@ -247,7 +247,7 @@ def double_integral(
     ny: int = 100,
 ) -> float:
     """
-    Compute double integral using 2D trapezoidal rule.
+    Compute double integral using a 2D midpoint rectangle rule (uniform grid).
 
     Used in:
     - 2D probability distributions
