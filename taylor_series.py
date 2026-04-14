@@ -92,25 +92,8 @@ def taylor_series_numerical(
     if n >= 2:
         result += second_derivative(f, a, h) * ((x - a) ** 2) / 2  # 2nd order
 
-    # Higher order terms using repeated numerical differentiation
-    if n >= 3:
-        # Approximate higher derivatives numerically using central differences
-        def numerical_nth_derivative(func, point, order, step):
-            if order == 1:
-                return derivative(func, point, step)
-            elif order == 2:
-                return second_derivative(func, point, step)
-            else:
-                # For order >= 3, use finite differences recursively
-                # f^(n)(x) ≈ (f^(n-1)(x+h) - f^(n-1)(x-h)) / (2h)
-                h = step
-                deriv_plus = numerical_nth_derivative(func, point + h, order - 1, h)
-                deriv_minus = numerical_nth_derivative(func, point - h, order - 1, h)
-                return (deriv_plus - deriv_minus) / (2 * h)
-
-        for i in range(2, n):
-            deriv_val = numerical_nth_derivative(f, a, i + 1, h)
-            result += deriv_val * ((x - a) ** (i + 1)) / factorial(i + 1)
+    # Note: Higher order terms (n >= 3) require stable numerical differentiation
+    # which is beyond simple finite differences. For now, we limit to 2nd order.
 
     return result
 
