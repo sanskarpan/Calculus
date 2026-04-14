@@ -16,6 +16,7 @@ from Calculus.integration import (
     monte_carlo_integration,
     double_integral,
     expectation,
+    adaptive_integration,
 )
 
 
@@ -56,6 +57,13 @@ class TestBasicIntegration(unittest.TestCase):
         # ∫₀¹ eˣ dx = e - 1
         result = simpsons_rule(f, 0, 1, n=1000)
         self.assertAlmostEqual(result, math.e - 1, places=3)
+
+    def test_adaptive_integration_sin(self):
+        """Test adaptive Simpson integration on sin."""
+        f = math.sin
+        # ∫₀^π sin(x) dx = 2
+        result = adaptive_integration(f, 0.0, math.pi, tolerance=1e-8, max_depth=20)
+        self.assertAlmostEqual(result, 2.0, places=6)
 
 
 class TestMonteCarloIntegration(unittest.TestCase):
