@@ -22,9 +22,13 @@ def factorial(n: int) -> int:
     return n * factorial(n - 1)
 
 
-def taylor_series(f: Callable[[float], float],
-                  derivatives: List[Callable[[float], float]],
-                  a: float, x: float, n: int) -> float:
+def taylor_series(
+    f: Callable[[float], float],
+    derivatives: List[Callable[[float], float]],
+    a: float,
+    x: float,
+    n: int,
+) -> float:
     """
     Compute Taylor series approximation of f around point a.
 
@@ -62,8 +66,9 @@ def taylor_series(f: Callable[[float], float],
     return result
 
 
-def taylor_series_numerical(f: Callable[[float], float], a: float, x: float,
-                            n: int, h: float = 1e-5) -> float:
+def taylor_series_numerical(
+    f: Callable[[float], float], a: float, x: float, n: int, h: float = 1e-5
+) -> float:
     """
     Taylor series using numerical derivatives.
 
@@ -87,27 +92,35 @@ def taylor_series_numerical(f: Callable[[float], float], a: float, x: float,
     if n >= 2:
         result += second_derivative(f, a, h) * ((x - a) ** 2) / 2  # 2nd order
 
-    # Higher order terms (simplified, less accurate)
+    # Higher order terms using repeated numerical differentiation
     if n >= 3:
-        # Approximate higher derivatives numerically
+        # Approximate higher derivatives numerically using central differences
+        def numerical_nth_derivative(func, point, order, step):
+            if order == 1:
+                return derivative(func, point, step)
+            elif order == 2:
+                return second_derivative(func, point, step)
+            else:
+                # For order >= 3, use finite differences recursively
+                # f^(n)(x) ≈ (f^(n-1)(x+h) - f^(n-1)(x-h)) / (2h)
+                h = step
+                deriv_plus = numerical_nth_derivative(func, point + h, order - 1, h)
+                deriv_minus = numerical_nth_derivative(func, point - h, order - 1, h)
+                return (deriv_plus - deriv_minus) / (2 * h)
+
         for i in range(2, n):
-            # Very rough approximation of i-th derivative
-            def f_wrapped(t):
-                return f(t)
-
-            deriv_val = derivative(f_wrapped, a, h)
-            for _ in range(i - 1):
-                current_deriv = deriv_val
-                deriv_val = (derivative(lambda t: t, a, h) - current_deriv) / h
-
+            deriv_val = numerical_nth_derivative(f, a, i + 1, h)
             result += deriv_val * ((x - a) ** (i + 1)) / factorial(i + 1)
 
     return result
 
 
-def maclaurin_series(f: Callable[[float], float],
-                     derivatives: List[Callable[[float], float]],
-                     x: float, n: int) -> float:
+def maclaurin_series(
+    f: Callable[[float], float],
+    derivatives: List[Callable[[float], float]],
+    x: float,
+    n: int,
+) -> float:
     """
     Maclaurin series (Taylor series centered at 0).
 
@@ -146,7 +159,7 @@ def exp_taylor(x: float, n: int = 10) -> float:
     """
     result = 0.0
     for k in range(n):
-        result += (x ** k) / factorial(k)
+        result += (x**k) / factorial(k)
     return result
 
 
@@ -209,13 +222,14 @@ def log_taylor(x: float, n: int = 20) -> float:
     result = 0.0
     z = x - 1  # Shift to center at 1
     for k in range(1, n + 1):
-        term = ((-1) ** (k + 1)) * (z ** k) / k
+        term = ((-1) ** (k + 1)) * (z**k) / k
         result += term
     return result
 
 
-def linear_approximation(f: Callable[[float], float], a: float, x: float,
-                         h: float = 1e-5) -> float:
+def linear_approximation(
+    f: Callable[[float], float], a: float, x: float, h: float = 1e-5
+) -> float:
     """
     First-order (linear) Taylor approximation.
 
@@ -240,8 +254,9 @@ def linear_approximation(f: Callable[[float], float], a: float, x: float,
     return f(a) + derivative(f, a, h) * (x - a)
 
 
-def quadratic_approximation(f: Callable[[float], float], a: float, x: float,
-                            h: float = 1e-5) -> float:
+def quadratic_approximation(
+    f: Callable[[float], float], a: float, x: float, h: float = 1e-5
+) -> float:
     """
     Second-order (quadratic) Taylor approximation.
 
@@ -290,9 +305,9 @@ def taylor_error_bound(f_max_derivative: float, a: float, x: float, n: int) -> f
     return f_max_derivative * (abs(x - a) ** (n + 1)) / factorial(n + 1)
 
 
-def multivariate_taylor_first_order(f: Callable[[List[float]], float],
-                                     a: List[float], x: List[float],
-                                     h: float = 1e-5) -> float:
+def multivariate_taylor_first_order(
+    f: Callable[[List[float]], float], a: List[float], x: List[float], h: float = 1e-5
+) -> float:
     """
     First-order multivariate Taylor approximation.
 
@@ -323,9 +338,9 @@ def multivariate_taylor_first_order(f: Callable[[List[float]], float],
     return f_a + dot_product
 
 
-def multivariate_taylor_second_order(f: Callable[[List[float]], float],
-                                      a: List[float], x: List[float],
-                                      h: float = 1e-5) -> float:
+def multivariate_taylor_second_order(
+    f: Callable[[List[float]], float], a: List[float], x: List[float], h: float = 1e-5
+) -> float:
     """
     Second-order multivariate Taylor approximation.
 
@@ -365,8 +380,9 @@ def multivariate_taylor_second_order(f: Callable[[List[float]], float],
     return f_a + first_order + 0.5 * second_order
 
 
-def approximate_function(f: Callable[[float], float], x_values: List[float],
-                         degree: int = 3) -> Callable[[float], float]:
+def approximate_function(
+    f: Callable[[float], float], x_values: List[float], degree: int = 3
+) -> Callable[[float], float]:
     """
     Create a polynomial approximation of a function.
 
@@ -393,16 +409,18 @@ def approximate_function(f: Callable[[float], float], x_values: List[float],
 
     coeffs = [f(a)]  # c0
     if degree >= 1:
-        coeffs.append(derivative(f, a))  # c1
+        coeffs.append(derivative(f, a))  # c1 (f'(a))
     if degree >= 2:
-        coeffs.append(second_derivative(f, a) / 2)  # c2/2!
+        coeffs.append(
+            second_derivative(f, a)
+        )  # c2 (f''(a)) - will be divided by 2! in poly()
 
     # Return polynomial function
     def poly(x):
         result = coeffs[0]
         delta = x - a
         for i in range(1, len(coeffs)):
-            result += coeffs[i] * (delta ** i) / factorial(i)
+            result += coeffs[i] * (delta**i) / factorial(i)
         return result
 
     return poly
